@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'YouTube URL is required' }, { status: 400 })
   }
 
-  const searchQuery = `Search for and analyze this YouTube podcast: ${youtubeUrl}`
+  const searchQuery = `Find and analyze this podcast episode: ${youtubeUrl}`
     + (videoTitle ? ` titled "${videoTitle}"` : '')
     + (videoAuthor ? ` by ${videoAuthor}` : '')
 
@@ -18,13 +18,14 @@ export async function POST(request: NextRequest) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'sonar-pro',
-      temperature: 0.2,
-      max_tokens: 4000,
+      model: 'sonar-reasoning-pro',
+      max_tokens: 5000,
       messages: [
         {
           role: 'system',
-          content: `You are a professional podcast content analyzer. Search for the podcast by its title and author, then analyze its content. Return ONLY a valid JSON object with no markdown formatting, no code fences, no citation markers like [1][2][3], and no explanation text before or after the JSON.
+          content: `You are a professional journalist writing a long-form article about a podcast episode. Search for transcripts, show notes, reviews, and discussions. Write so the reader fully understands the episode — use specific facts, names, numbers, stories, and arguments.
+
+Return ONLY a valid JSON object. No markdown, no code fences, no citation markers like [1][2][3], no text outside the JSON.
 
 Use exactly this structure:
 {
@@ -34,16 +35,27 @@ Use exactly this structure:
   "duration_minutes": 45,
   "tags": ["tag1", "tag2", "tag3"],
   "summary": {
-    "overview": "2-3 sentence overview of the episode",
     "sections": [
-      { "heading": "Section Title", "content": "Detailed paragraph about this section" }
+      {
+        "heading": "A specific descriptive subheading about this section's topic",
+        "content": "3-4 full paragraphs of rich narrative prose. Each paragraph 4-6 sentences. Include specific facts, examples, stories, statistics, and arguments from the episode. Write like a journalist — depth, clarity, narrative flow. Separate paragraphs with a blank line. No bullet points."
+      }
     ],
-    "quotes": ["Notable quote from the episode", "Another quote"]
-  },
-  "key_takeaways": ["Takeaway 1", "Takeaway 2", "Takeaway 3"],
-  "actionable_advice": ["Concrete action 1", "Concrete action 2"],
-  "resources": ["Book or tool mentioned", "Website mentioned"]
-}`
+    "quotes": ["Direct quote from the speaker", "Another notable quote"]
+  }
+}
+
+STRICT RULES for section headings — these are FORBIDDEN:
+- Do NOT use: "Overview", "Summary", "Introduction", "Conclusion", "Key Takeaways", "Actionable Advice", "Background", "Main Points"
+- Every heading must be SPECIFIC and DESCRIPTIVE about the actual content, like a newspaper subheading
+- Good examples: "Why Social Media Is Hitting Teenage Girls Hardest", "The Neuroscience Behind Dopamine and Addiction", "How Denmark Became the Blueprint for Reform"
+
+Requirements:
+- Write 4-5 sections — start directly with the most important topic, no generic intro section
+- Each section: 3-4 full paragraphs of flowing prose, never fewer
+- Total article: 1200-1600 words
+- Quotes: real words from the episode when possible
+- Tags: 3-5 specific topic tags`
         },
         {
           role: 'user',
@@ -70,7 +82,6 @@ Use exactly this structure:
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
     if (!jsonMatch) throw new Error('No JSON found')
     const podcastData = JSON.parse(jsonMatch[0])
-    // Override title/creator with accurate YouTube metadata if available
     if (videoTitle) podcastData.title = videoTitle
     if (videoAuthor) podcastData.creator = videoAuthor
     return NextResponse.json(podcastData)

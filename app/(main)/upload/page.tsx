@@ -283,17 +283,6 @@ export default function UploadPage() {
             textarea={false}
           />
 
-          {/* Overview */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Overview</label>
-            <textarea
-              value={formData.overview}
-              onChange={e => updateField('overview', e.target.value)}
-              rows={4}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-indigo-400 resize-none"
-            />
-          </div>
-
           {/* Sections */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
@@ -343,36 +332,6 @@ export default function UploadPage() {
             onRemove={i => removeArrayItem('quotes', i)}
             onChange={(i, v) => updateArrayItem('quotes', i, v)}
             textarea={true}
-          />
-
-          {/* Key Takeaways */}
-          <ArrayField
-            label="Key Takeaways"
-            items={formData.key_takeaways}
-            onAdd={() => addArrayItem('key_takeaways')}
-            onRemove={i => removeArrayItem('key_takeaways', i)}
-            onChange={(i, v) => updateArrayItem('key_takeaways', i, v)}
-            textarea={true}
-          />
-
-          {/* Actionable Advice */}
-          <ArrayField
-            label="Actionable Advice"
-            items={formData.actionable_advice}
-            onAdd={() => addArrayItem('actionable_advice')}
-            onRemove={i => removeArrayItem('actionable_advice', i)}
-            onChange={(i, v) => updateArrayItem('actionable_advice', i, v)}
-            textarea={true}
-          />
-
-          {/* Resources */}
-          <ArrayField
-            label="Resources"
-            items={formData.resources}
-            onAdd={() => addArrayItem('resources')}
-            onRemove={i => removeArrayItem('resources', i)}
-            onChange={(i, v) => updateArrayItem('resources', i, v)}
-            textarea={false}
           />
 
           {/* Save button */}
