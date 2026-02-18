@@ -1,24 +1,28 @@
 'use client'
 
 import { useState, SubmitEvent } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/app/lib/supabase/client'
 
-export default function LoginPage() {
+export default function SignUpPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
   const supabase = createClient()
 
-  async function handleSignIn(e: SubmitEvent<HTMLFormElement>) {
+  async function handleSignUp(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (password !== confirm) {
+      setError('Passwords do not match')
+      return
+    }
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signUp({ email, password })
 
     if (error) {
       setError(error.message)
@@ -26,8 +30,8 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/')
-    router.refresh()
+    setSuccess(true)
+    setLoading(false)
   }
 
   async function handleGitHubSignIn() {
@@ -39,12 +43,28 @@ export default function LoginPage() {
     })
   }
 
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-full max-w-md p-8 rounded-2xl border border-foreground/10 bg-foreground/5 text-center">
+          <h2 className="text-xl font-bold mb-3">Check your email</h2>
+          <p className="text-foreground/60 text-sm mb-6">
+            We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.
+          </p>
+          <Link href="/login" className="text-sm underline underline-offset-4 hover:opacity-70">
+            Back to login
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-md p-8 rounded-2xl border border-foreground/10 bg-foreground/5">
-        <h1 className="text-2xl font-bold mb-8 text-center">Podcast Blog</h1>
+        <h1 className="text-2xl font-bold mb-8 text-center">Create account</h1>
 
-        <form onSubmit={handleSignIn} className="flex flex-col gap-4">
+        <form onSubmit={handleSignUp} className="flex flex-col gap-4">
           <input
             type="email"
             placeholder="Email"
@@ -61,13 +81,21 @@ export default function LoginPage() {
             required
             className="w-full px-4 py-3 rounded-lg border border-foreground/20 bg-background focus:outline-none focus:border-foreground/50"
           />
+          <input
+            type="password"
+            placeholder="Confirm password"
+            value={confirm}
+            onChange={e => setConfirm(e.target.value)}
+            required
+            className="w-full px-4 py-3 rounded-lg border border-foreground/20 bg-background focus:outline-none focus:border-foreground/50"
+          />
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
             disabled={loading}
             className="w-full py-3 rounded-lg bg-foreground text-background font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? 'Creating account...' : 'Create account'}
           </button>
         </form>
 
@@ -88,9 +116,9 @@ export default function LoginPage() {
         </button>
 
         <p className="text-center text-sm text-foreground/50 mt-6">
-          Don&apos;t have an account?{' '}
-          <Link href="/signup" className="underline underline-offset-4 hover:opacity-70">
-            Sign up
+          Already have an account?{' '}
+          <Link href="/login" className="underline underline-offset-4 hover:opacity-70">
+            Sign in
           </Link>
         </p>
       </div>
