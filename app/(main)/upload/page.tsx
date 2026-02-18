@@ -290,7 +290,7 @@ export default function UploadPage() {
               value={formData.overview}
               onChange={e => updateField('overview', e.target.value)}
               rows={4}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-indigo-400 resize-none"
             />
           </div>
 
@@ -328,7 +328,7 @@ export default function UploadPage() {
                     value={section.content}
                     onChange={e => updateSection(i, 'content', e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 resize-none"
+                    className="w-full px-3 py-1.5 rounded border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-indigo-400 resize-none"
                   />
                 </div>
               ))}
@@ -418,7 +418,7 @@ function ArrayField({
                 value={item}
                 onChange={e => onChange(i, e.target.value)}
                 rows={2}
-                className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400 resize-none"
+                className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-indigo-400 resize-none"
               />
             ) : (
               <input
