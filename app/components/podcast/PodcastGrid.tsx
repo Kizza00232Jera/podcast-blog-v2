@@ -60,19 +60,19 @@ export default function PodcastGrid({ podcasts }: { podcasts: PodcastPost[] }) {
 
   return (
     <div>
-      {/* Row 1: Search + Sort */}
-      <div className="flex gap-3 mb-3">
+      {/* Filters: stacked on mobile */}
+      <div className="flex flex-col gap-3 mb-6">
         <input
           type="text"
           placeholder="Search by title, podcast or creator..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="flex-1 px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:border-indigo-400"
+          className="w-full px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400"
         />
         <select
           value={sort}
           onChange={e => setSort(e.target.value as SortOption)}
-          className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-600 focus:outline-none focus:border-indigo-400"
+          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-600 focus:outline-none focus:border-indigo-400"
         >
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
@@ -80,36 +80,30 @@ export default function PodcastGrid({ podcasts }: { podcasts: PodcastPost[] }) {
           <option value="longest">Longest</option>
           <option value="shortest">Shortest</option>
         </select>
-      </div>
-
-      {/* Row 2: Podcast + Tag dropdowns + clear */}
-      <div className="flex gap-3 mb-6 items-center">
         <select
           value={activePodcast}
           onChange={e => setActivePodcast(e.target.value)}
-          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-600 focus:outline-none focus:border-indigo-400"
+          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-600 focus:outline-none focus:border-indigo-400"
         >
           <option value="">All podcasts</option>
           {allPodcasts.map(name => (
             <option key={name} value={name}>{name}</option>
           ))}
         </select>
-
         <select
           value={activeTag}
           onChange={e => setActiveTag(e.target.value)}
-          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-600 focus:outline-none focus:border-indigo-400"
+          className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-600 focus:outline-none focus:border-indigo-400"
         >
           <option value="">All tags</option>
           {allTags.map(tag => (
             <option key={tag} value={tag}>{tag}</option>
           ))}
         </select>
-
         {hasActiveFilters && (
           <button
             onClick={() => { setSearch(''); setActivePodcast(''); setActiveTag('') }}
-            className="text-xs text-gray-400 hover:text-gray-600 whitespace-nowrap transition-colors"
+            className="text-xs text-gray-400 hover:text-gray-600 text-left transition-colors"
           >
             Clear filters
           </button>

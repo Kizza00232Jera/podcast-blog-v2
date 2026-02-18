@@ -59,7 +59,8 @@ export default function PodcastCard({ podcast }: { podcast: PodcastPost }) {
             href={`/podcast/${podcast.slug}`}
             className="flex-1 bg-indigo-600 text-white py-2 px-3 rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors text-center"
           >
-            Read Full Article →
+            <span className="hidden sm:inline">Read Full Article &rarr;</span>
+            <span className="sm:hidden">Read Full Article</span>
           </Link>
           {podcast.source_link && (
             <a

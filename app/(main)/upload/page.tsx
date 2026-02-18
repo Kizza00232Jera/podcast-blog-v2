@@ -186,14 +186,14 @@ export default function UploadPage() {
 
       {/* URL input */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <form onSubmit={handleGenerate} className="flex gap-3">
+        <form onSubmit={handleGenerate} className="flex flex-col sm:flex-row gap-3">
           <input
             type="url"
             placeholder="Paste YouTube URL"
             value={youtubeUrl}
             onChange={e => setYoutubeUrl(e.target.value)}
             required
-            className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400"
+            className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400"
           />
           <button
             type="submit"
@@ -224,7 +224,7 @@ export default function UploadPage() {
                 type="text"
                 value={formData.title}
                 onChange={e => updateField('title', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
               />
             </div>
 
@@ -235,7 +235,7 @@ export default function UploadPage() {
                   type="text"
                   value={formData.podcast_name}
                   onChange={e => updateField('podcast_name', e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
                 />
               </div>
               <div>
@@ -244,7 +244,7 @@ export default function UploadPage() {
                   type="text"
                   value={formData.creator}
                   onChange={e => updateField('creator', e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
                 />
               </div>
             </div>
@@ -256,7 +256,7 @@ export default function UploadPage() {
                   type="number"
                   value={formData.duration_minutes}
                   onChange={e => updateField('duration_minutes', Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
                 />
               </div>
               <div>
@@ -267,7 +267,7 @@ export default function UploadPage() {
                   max={5}
                   value={formData.rating}
                   onChange={e => updateField('rating', Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
                 />
               </div>
             </div>
@@ -314,7 +314,7 @@ export default function UploadPage() {
                       placeholder="Section heading"
                       value={section.heading}
                       onChange={e => updateSection(i, 'heading', e.target.value)}
-                      className="flex-1 px-3 py-1.5 rounded border border-gray-200 text-sm focus:outline-none focus:border-indigo-400"
+                      className="flex-1 px-3 py-1.5 rounded border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
                     />
                     <button
                       onClick={() => removeSection(i)}
@@ -425,7 +425,7 @@ function ArrayField({
                 type="text"
                 value={item}
                 onChange={e => onChange(i, e.target.value)}
-                className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-indigo-400"
+                className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
               />
             )}
             <button
