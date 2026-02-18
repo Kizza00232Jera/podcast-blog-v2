@@ -35,8 +35,18 @@ export default function PodcastCard({ podcast }: { podcast: PodcastPost }) {
         </div>
 
         {podcast.rating && (
-          <div className="text-yellow-400 mb-3 text-sm">
-            {'⭐'.repeat(podcast.rating)}
+          <div className="text-yellow-400 mb-2 text-sm tracking-tight">
+            {'★'.repeat(podcast.rating)}{'☆'.repeat(5 - podcast.rating)}
+          </div>
+        )}
+
+        {podcast.tags?.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {podcast.tags.slice(0, 3).map((tag: string) => (
+              <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 font-medium">
+                {tag}
+              </span>
+            ))}
           </div>
         )}
 
