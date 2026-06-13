@@ -25,7 +25,7 @@ async function handler(request: Request) {
   }
 
   try {
-    const { content, lang } = await getTranscript(youtubeUrl)
+    const { content, lang, durationMinutes } = await getTranscript(youtubeUrl)
 
     const generated = await summarizeFromTranscript(content, {
       title: post.title,
@@ -37,6 +37,7 @@ async function handler(request: Request) {
       title: generated.title || post.title,
       podcast_name: generated.podcast_name || post.podcast_name,
       creator: generated.creator || post.creator,
+      duration_minutes: durationMinutes ?? post.duration_minutes,
       tags: generated.tags,
       summary: toStoredSummary(generated),
       key_takeaways: generated.summary.key_takeaways,

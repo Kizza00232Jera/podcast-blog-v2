@@ -14,6 +14,8 @@ export interface Transcript {
   content: string
   /** Language hint; "auto" means let the summarizer infer from the text. */
   lang: string
+  /** Episode length in minutes, when the provider exposes timing. */
+  durationMinutes?: number
 }
 
 const redis = Redis.fromEnv()
