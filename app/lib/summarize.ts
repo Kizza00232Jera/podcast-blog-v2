@@ -9,6 +9,12 @@ export interface SummaryMeta {
   lang: string
 }
 
+// Cost + time guardrails (tuned to fit Vercel Hobby's 60s function limit and
+// stay under the ~30c/summary ceiling). At ~4 chars/token, 170k chars is ~42k
+// input tokens (~$0.21); a 2-hour podcast is usually well under this. Longer
+// transcripts are truncated so cost and runtime stay bounded.
+const MAX_TRANSCRIPT_CHARS = 170_000
+
 // What the model returns. A superset of the legacy summary shape: dynamic
 // sections, one woven verbatim quote per major topic, a skimmable takeaways
 // list, and a one-line-able overview/lede.
@@ -121,16 +127,26 @@ export async function summarizeFromTranscript(
   transcript: string,
   meta: SummaryMeta
 ): Promise<GeneratedSummary> {
+  // Bound input so a very long episode can't blow the cost ceiling or the
+  // function timeout. Truncate at a paragraph boundary near the cap.
+  let input = transcript
+  if (input.length > MAX_TRANSCRIPT_CHARS) {
+    const cut = input.lastIndexOf(' ', MAX_TRANSCRIPT_CHARS)
+    input = input.slice(0, cut > 0 ? cut : MAX_TRANSCRIPT_CHARS)
+  }
+
   const stream = anthropic.messages.stream({
     model: SUMMARY_MODEL,
-    max_tokens: 32000,
+    max_tokens: 12000,
     thinking: { type: 'adaptive' },
+    // medium effort keeps Opus fast enough for the 60s Hobby limit and the
+    // cost under ~30c, while the prompt still drives full-depth output.
     output_config: {
-      effort: 'high',
+      effort: 'medium',
       format: { type: 'json_schema', schema: SUMMARY_SCHEMA },
     },
     system: systemPrompt(),
-    messages: [{ role: 'user', content: buildUserMessage(transcript, meta) }],
+    messages: [{ role: 'user', content: buildUserMessage(input, meta) }],
   })
 
   const message = await stream.finalMessage()

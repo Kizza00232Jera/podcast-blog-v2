@@ -6,6 +6,9 @@ import { extractVideoId } from '@/app/lib/supadata'
 import { createSlug } from '@/app/lib/slug'
 import { createPost } from '@/app/lib/db/queries'
 
+// Antonio's own Clerk id is exempt from the daily limit; everyone else gets 3/day.
+const UNLIMITED_USER_ID = 'user_3F5zsMzyw3nkanDkUCsdyO92TM4'
+
 // Click "Generate" -> validate + rate-limit -> insert a "generating..."
 // placeholder row -> enqueue the heavy work to QStash -> return immediately.
 // The worker (/api/worker) fetches captions, runs Opus, and fills the row.
@@ -28,13 +31,16 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // 3 generations/day/user. Shared Redis -> the pcast:ratelimit:gen prefix.
-  const { success, remaining } = await generationRatelimit.limit(userId)
-  if (!success) {
-    return NextResponse.json(
-      { error: 'Daily limit reached (3 per day). Try again tomorrow.' },
-      { status: 429 }
-    )
+  // 3 generations/day/user (shared Redis -> the pcast:ratelimit:gen prefix).
+  // The owner account is exempt.
+  if (userId !== UNLIMITED_USER_ID) {
+    const { success } = await generationRatelimit.limit(userId)
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Daily limit reached (3 per day). Try again tomorrow.' },
+        { status: 429 }
+      )
+    }
   }
 
   // Lightweight metadata for a presentable placeholder card.
