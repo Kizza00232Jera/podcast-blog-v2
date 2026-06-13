@@ -1,37 +1,52 @@
-'use client'
-
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/app/lib/supabase/client'
-import type { User } from '@supabase/supabase-js'
+import { auth } from '@clerk/nextjs/server'
+import { SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
 
-export default function Header({ user }: { user: User }) {
-  const router = useRouter()
-  const supabase = createClient()
-
-  async function handleSignOut() {
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
+// Server component: gate on auth() rather than <SignedIn>/<SignedOut>, which
+// this Clerk version no longer exports from the package root.
+export default async function Header() {
+  const { userId } = await auth()
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur-sm">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="font-bold text-lg text-gray-900">
-          🎙️ Podcast Blog
-        </Link>
-        <div className="flex items-center gap-6">
-          <Link href="/upload" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
-            Upload
-          </Link>
-          <span className="text-sm text-gray-400 hidden sm:block">{user.email}</span>
-          <button
-            onClick={handleSignOut}
-            className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+    <nav className="sticky top-0 z-50 border-b border-line bg-canvas/80 backdrop-blur-md">
+      <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <span
+            aria-hidden
+            className="grid place-items-center h-8 w-8 rounded-lg bg-amber-dim text-amber text-base ring-1 ring-line-strong transition-colors group-hover:bg-amber/20"
           >
-            Sign out
-          </button>
+            ◗
+          </span>
+          <span className="font-ui font-semibold tracking-tight text-ink text-[17px]">
+            Echonotes
+          </span>
+        </Link>
+
+        <div className="flex items-center gap-3">
+          {userId ? (
+            <>
+              <Link
+                href="/upload"
+                className="text-sm font-medium text-ink-soft hover:text-ink transition-colors"
+              >
+                Generate
+              </Link>
+              <UserButton />
+            </>
+          ) : (
+            <>
+              <SignInButton mode="modal">
+                <button className="text-sm font-medium text-ink-soft hover:text-ink transition-colors">
+                  Sign in
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="text-sm font-semibold px-4 py-2 rounded-full bg-amber text-canvas hover:bg-amber-strong transition-colors">
+                  Sign up
+                </button>
+              </SignUpButton>
+            </>
+          )}
         </div>
       </div>
     </nav>

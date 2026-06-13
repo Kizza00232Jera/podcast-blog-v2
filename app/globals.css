@@ -1,26 +1,72 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+  Echonotes — warm-dark audio identity.
+  Canvas #0F0F12, amber #FFB347 accent. Crisp geometric sans (Manrope) for UI,
+  reading-comfortable serif (Newsreader) for article bodies. Its own identity,
+  not the NORDHEM brand.
+*/
+@theme {
+  --color-canvas: #0f0f12;
+  --color-surface: #17171c;
+  --color-surface-2: #1f1f27;
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-strong: rgba(255, 255, 255, 0.14);
+  --color-ink: #f2f1ed;
+  --color-ink-soft: #c8c8cf;
+  --color-ink-muted: #8d8d96;
+  --color-amber: #ffb347;
+  --color-amber-strong: #ff9e2c;
+  --color-amber-dim: rgba(255, 179, 71, 0.12);
+
+  --font-ui: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-reading: var(--font-newsreader), Georgia, "Times New Roman", serif;
+
+  --radius-card: 16px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle warm glow behind the page, anchored top-center. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    60rem 40rem at 50% -10%,
+    rgba(255, 179, 71, 0.06),
+    transparent 70%
+  );
+  z-index: 0;
+}
+
+/* Reading measure for article bodies. */
+.prose-measure {
+  max-width: 42rem; /* ~66 character measure */
+}
+
+/* Article paragraphs in the reading serif. */
+.article-body p {
+  font-family: var(--font-reading);
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: var(--color-ink-soft);
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.animate-pulse-soft {
+  animation: pulse-soft 1.6s ease-in-out infinite;
 }

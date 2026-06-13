@@ -1,66 +1,91 @@
-import { createClient } from '@/app/lib/supabase/server'
-import PodcastGrid from '@/app/components/podcast/PodcastGrid'
-import type { PodcastPost } from '@/app/types/podcast'
+import { auth } from '@clerk/nextjs/server'
+import { SignUpButton } from '@clerk/nextjs'
 import Link from 'next/link'
+import PodcastGrid from '@/app/components/podcast/PodcastGrid'
+import GeneratingPoller from '@/app/components/podcast/GeneratingPoller'
+import { getPublicPosts, getUserPosts } from '@/app/lib/db/queries'
+import type { PodcastPost } from '@/app/types/podcast'
 
 export default async function HomePage() {
-  const supabase = await createClient()
+  const { userId } = await auth()
 
-  const { data: podcasts } = await supabase
-    .from('podcast_posts')
-    .select('*')
-    .order('created_at', { ascending: false })
+  const list = (
+    userId ? await getUserPosts(userId) : await getPublicPosts()
+  ) as unknown as PodcastPost[]
 
-  const list: PodcastPost[] = podcasts ?? []
-
-  const totalHours = Math.round(list.reduce((sum, p) => sum + (p.duration_minutes ?? 0), 0) / 60)
-  const avgRating = list.length > 0
-    ? (list.reduce((sum, p) => sum + (p.rating ?? 0), 0) / list.length).toFixed(1)
-    : '—'
+  const anyGenerating = list.some((p) => p.status === 'generating')
+  const ready = list.filter((p) => p.status === 'ready')
+  const totalHours = Math.round(
+    ready.reduce((s, p) => s + (p.duration_minutes ?? 0), 0) / 60
+  )
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Your Podcasts</h1>
-        <Link
-          href="/upload"
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
-        >
-          + Upload
-        </Link>
-      </div>
+      <GeneratingPoller active={anyGenerating} />
 
-      {list.length > 0 ? (
-        <>
-          {/* Stats strip */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <p className="text-2xl font-bold text-indigo-600">{list.length}</p>
-              <p className="text-xs text-gray-500 mt-1">Podcasts saved</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <p className="text-2xl font-bold text-indigo-600">{totalHours}h</p>
-              <p className="text-xs text-gray-500 mt-1">Total listened</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <p className="text-2xl font-bold text-indigo-600">{avgRating}</p>
-              <p className="text-xs text-gray-500 mt-1">Avg rating</p>
-            </div>
+      {/* Header / hero */}
+      {userId ? (
+        <div className="mb-8 flex items-end justify-between gap-4">
+          <div>
+            <h1 className="font-ui text-3xl font-bold tracking-tight text-ink">
+              Your library
+            </h1>
+            <p className="mt-1 text-sm text-ink-muted">
+              {ready.length} {ready.length === 1 ? 'summary' : 'summaries'}
+              {totalHours > 0 && ` · ${totalHours}h of listening, read in minutes`}
+            </p>
           </div>
-
-          <PodcastGrid podcasts={list} />
-        </>
-      ) : (
-        <div className="text-center py-24">
-          <p className="text-gray-400 text-lg mb-6">No podcasts yet.</p>
           <Link
             href="/upload"
-            className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            className="shrink-0 rounded-full bg-amber px-5 py-2.5 text-sm font-semibold text-canvas hover:bg-amber-strong transition-colors"
           >
-            Upload your first one
+            + Generate
           </Link>
         </div>
+      ) : (
+        <div className="mb-12 max-w-2xl">
+          <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-amber">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber" />
+            Summaries written by Claude
+          </span>
+          <h1 className="mt-5 font-ui text-4xl font-bold leading-[1.1] tracking-tight text-ink sm:text-5xl">
+            Listen less. <span className="text-amber">Know more.</span>
+          </h1>
+          <p className="mt-4 text-lg leading-relaxed text-ink-soft">
+            Paste a YouTube podcast link and get a rich, readable summary, the
+            kind you can actually learn from. Browse the showcase below, or sign
+            up to build your own private library.
+          </p>
+          <div className="mt-6">
+            <SignUpButton mode="modal">
+              <button className="rounded-full bg-amber px-6 py-3 text-sm font-semibold text-canvas hover:bg-amber-strong transition-colors">
+                Start your library
+              </button>
+            </SignUpButton>
+          </div>
+        </div>
+      )}
+
+      {!userId && list.length > 0 && (
+        <h2 className="mb-5 font-ui text-sm font-semibold uppercase tracking-wider text-ink-muted">
+          Showcase
+        </h2>
+      )}
+
+      {list.length > 0 ? (
+        <PodcastGrid podcasts={list} />
+      ) : userId ? (
+        <div className="rounded-[var(--radius-card)] border border-dashed border-line-strong py-20 text-center">
+          <p className="text-ink-muted">Nothing here yet.</p>
+          <Link
+            href="/upload"
+            className="mt-5 inline-block rounded-full bg-amber px-6 py-3 text-sm font-semibold text-canvas hover:bg-amber-strong transition-colors"
+          >
+            Generate your first summary
+          </Link>
+        </div>
+      ) : (
+        <p className="text-ink-muted">No public summaries yet.</p>
       )}
     </div>
   )

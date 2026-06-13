@@ -1,27 +1,24 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/app/lib/supabase/client'
+import { useTransition } from 'react'
+import { deletePodcastAction } from '@/app/lib/actions'
 
 export default function DeleteButton({ podcastId }: { podcastId: string }) {
-  const router = useRouter()
-  const supabase = createClient()
+  const [isPending, startTransition] = useTransition()
 
-  async function handleDelete() {
+  function handleDelete() {
     const confirmed = confirm('Are you sure you want to delete this podcast?')
     if (!confirmed) return
-
-    await supabase.from('podcast_posts').delete().eq('id', podcastId)
-    router.push('/')
-    router.refresh()
+    startTransition(() => deletePodcastAction(podcastId))
   }
 
   return (
     <button
       onClick={handleDelete}
-      className="text-sm px-4 py-2 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+      disabled={isPending}
+      className="rounded-full border border-line px-4 py-2 text-sm text-ink-muted hover:border-red-500/40 hover:text-red-300 disabled:opacity-50 transition-colors"
     >
-      Delete
+      {isPending ? 'Deleting…' : 'Delete'}
     </button>
   )
 }

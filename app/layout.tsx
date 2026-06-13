@@ -1,25 +1,31 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
+import { Manrope, Newsreader } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Crisp geometric sans for UI, reading-comfortable serif for article bodies.
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
   subsets: ["latin"],
+  display: "swap",
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
-  title: "Podcast Blog",
-  description: "Your personal podcast notes",
+  title: "Echonotes - podcast summaries by Claude",
+  description:
+    "Paste a YouTube podcast link and get a rich, readable written summary.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Podcast Blog",
+    title: "Echonotes",
   },
   formatDetection: {
     telephone: false,
@@ -32,11 +38,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+    <html lang="en" className={`${manrope.variable} ${newsreader.variable}`}>
+      <body className="antialiased">
+        <ClerkProvider
+          appearance={{
+            variables: {
+              colorPrimary: "#FFB347",
+              colorBackground: "#17171C",
+              colorForeground: "#F2F1ED",
+              colorInput: "#1F1F27",
+              colorInputForeground: "#F2F1ED",
+            },
+          }}
+        >
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );

@@ -1,43 +1,37 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+// Anonymous visitors get the read-only public gallery (handled in the pages by
+// querying is_public rows). Only these routes require a signed-in user:
+//  - /upload          (the generate UI / private library writes)
+//  - /api/generate    (enqueues a generation)
+//  - /library         (a signed-in user's private collection)
+// The QStash worker (/api/worker) is NOT protected here — it verifies the
+// QStash signature itself.
+const isProtectedRoute = createRouteMatcher([
+  '/upload(.*)',
+  '/api/generate(.*)',
+])
 
-  let supabaseResponse = NextResponse.next({ request })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
+export default clerkMiddleware(async (auth, req) => {
+  if (isProtectedRoute(req)) {
+    const { userId } = await auth()
+    if (!userId) {
+      // For API routes return 401; for pages send to Clerk sign-in.
+      if (req.nextUrl.pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      return (await auth()).redirectToSignIn()
     }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const publicPaths = ['/login', '/signup']
-  if (!user && !publicPaths.includes(request.nextUrl.pathname)) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
   }
-
-  return supabaseResponse
-}
+})
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: [
+    // Skip Next internals and static files, but always run for clerk handshake
+    // and API routes.
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|png|gif|svg|webp|ico|woff2?|ttf|map)).*)',
+    '/__clerk/:path*',
+    '/(api|trpc)(.*)',
+  ],
 }
