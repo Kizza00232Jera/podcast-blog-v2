@@ -82,26 +82,43 @@ function providers(): Provider[] {
 }
 
 export async function getTranscript(url: string): Promise<Transcript> {
-  const notes: string[] = []
+  let anyConfigured = false
+  let sawLimit = false
+  let sawNoCaptions = false
 
   for (const p of providers()) {
     if (!p.enabled) continue
+    anyConfigured = true
     if (!(await reserve(p.name))) {
-      notes.push(`${p.name}: monthly cap reached`)
+      sawLimit = true
       continue
     }
     try {
       return await p.fetch(url)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'error'
-      notes.push(`${p.name}: ${msg}`)
-      if (/limit/i.test(msg)) await markExhausted(p.name)
+      if (/limit/i.test(msg)) {
+        sawLimit = true
+        await markExhausted(p.name)
+      } else if (/caption/i.test(msg)) {
+        sawNoCaptions = true
+      }
     }
   }
 
-  throw new Error(
-    notes.length
-      ? `No transcript available. ${notes.join('; ')}.`
-      : 'No transcript provider is configured.'
-  )
+  // Friendly, user-facing messages (shown on the card).
+  if (!anyConfigured) {
+    throw new Error('No transcript service is configured.')
+  }
+  if (sawNoCaptions && !sawLimit) {
+    throw new Error(
+      'This video has no captions, so it cannot be summarized on the free plan. Try a podcast that has captions.'
+    )
+  }
+  if (sawLimit) {
+    throw new Error(
+      'The free transcript limit was reached. It resets next month, or try again later.'
+    )
+  }
+  throw new Error('Could not fetch a transcript for this video.')
 }
