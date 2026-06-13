@@ -2,7 +2,12 @@ import { NextResponse } from 'next/server'
 import { verifySignatureAppRouter } from '@upstash/qstash/nextjs'
 import { getTranscript } from '@/app/lib/transcript'
 import { summarizeFromTranscript, toStoredSummary } from '@/app/lib/summarize'
-import { getPostById, markPostReady, markPostError } from '@/app/lib/db/queries'
+import {
+  getPostById,
+  markPostReady,
+  markPostError,
+  markStage,
+} from '@/app/lib/db/queries'
 
 // Summaries can run long; give the function room. (Vercel Pro allows up to 300s;
 // on Hobby this is capped at 60s, which the medium-effort summary fits within.)
@@ -25,8 +30,10 @@ async function handler(request: Request) {
   }
 
   try {
+    await markStage(postId, 'transcribing')
     const { content, lang, durationMinutes } = await getTranscript(youtubeUrl)
 
+    await markStage(postId, 'summarizing')
     const generated = await summarizeFromTranscript(content, {
       title: post.title,
       author: post.creator ?? '',

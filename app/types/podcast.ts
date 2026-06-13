@@ -16,6 +16,7 @@ export interface PodcastPost {
     user_id: string;
     is_public: boolean;
     status: 'generating' | 'ready' | 'error';
+    stage: 'queued' | 'transcribing' | 'summarizing' | null;
     error_message: string | null;
     created_at: string;
 }

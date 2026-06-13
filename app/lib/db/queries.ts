@@ -48,6 +48,14 @@ export async function getPostById(id: string): Promise<PodcastRow | null> {
   return rows[0] ?? null
 }
 
+/** Update the generation sub-stage (drives the progress bar). */
+export async function markStage(
+  id: string,
+  stage: 'queued' | 'transcribing' | 'summarizing'
+): Promise<void> {
+  await db.update(podcastPosts).set({ stage }).where(eq(podcastPosts.id, id))
+}
+
 /** Worker success: fill the placeholder row with the finished summary. */
 export async function markPostReady(
   id: string,

@@ -106,13 +106,15 @@ export async function getTranscript(url: string): Promise<Transcript> {
     }
   }
 
-  // Friendly, user-facing messages (shown on the card).
+  // Friendly, user-facing messages (shown on the card). A definitive
+  // "no captions" answer from any provider wins, even if another was capped,
+  // because a caption-less video can't be summarized either way on the free plan.
   if (!anyConfigured) {
     throw new Error('No transcript service is configured.')
   }
-  if (sawNoCaptions && !sawLimit) {
+  if (sawNoCaptions) {
     throw new Error(
-      'This video has no captions, so it cannot be summarized on the free plan. Try a podcast that has captions.'
+      'This video has no captions, so it cannot be summarized on the free plan. Captionless videos would need paid audio transcription. Try a podcast that has captions.'
     )
   }
   if (sawLimit) {

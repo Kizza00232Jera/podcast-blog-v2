@@ -37,11 +37,26 @@ export default function PodcastCard({ podcast }: { podcast: PodcastPost }) {
           </span>
         )}
         {generating && (
-          <div className="absolute inset-0 grid place-items-center bg-canvas/70 backdrop-blur-sm">
-            <span className="flex items-center gap-2 text-amber text-sm font-medium animate-pulse-soft">
-              <span className="h-2 w-2 rounded-full bg-amber" />
-              Summarizing…
-            </span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-canvas/75 px-6 backdrop-blur-sm">
+            {(() => {
+              const steps = {
+                queued: { label: 'Queued', pct: 12 },
+                transcribing: { label: 'Fetching transcript', pct: 42 },
+                summarizing: { label: 'Writing the summary', pct: 80 },
+              } as const
+              const s = steps[podcast.stage ?? 'queued'] ?? steps.queued
+              return (
+                <>
+                  <span className="text-sm font-medium text-amber">{s.label}…</span>
+                  <div className="h-1.5 w-full max-w-[180px] overflow-hidden rounded-full bg-surface-2">
+                    <div
+                      className="echonotes-bar h-full rounded-full bg-amber transition-[width] duration-700 ease-out"
+                      style={{ width: `${s.pct}%` }}
+                    />
+                  </div>
+                </>
+              )
+            })()}
           </div>
         )}
       </div>

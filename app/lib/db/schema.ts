@@ -40,6 +40,8 @@ export const podcastPosts = pgTable('podcast_posts', {
   status: text('status', { enum: ['generating', 'ready', 'error'] })
     .notNull()
     .default('ready'),
+  // Sub-stage of a 'generating' row, drives the real progress bar on the card.
+  stage: text('stage', { enum: ['queued', 'transcribing', 'summarizing'] }),
   error_message: text('error_message'),
   created_at: timestamp('created_at', { withTimezone: true })
     .notNull()

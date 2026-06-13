@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Manrope, Newsreader } from "next/font/google";
 import "./globals.css";
+import SplashScreen from "./components/ui/SplashScreen";
 
 // Crisp geometric sans for UI, reading-comfortable serif for article bodies.
 const manrope = Manrope({
@@ -24,12 +25,20 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Echonotes",
+  },
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/apple-touch-icon.png",
   },
   formatDetection: {
     telephone: false,
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0F0F12",
 };
 
 export default function RootLayout({
@@ -40,6 +49,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${manrope.variable} ${newsreader.variable}`}>
       <body className="antialiased">
+        <SplashScreen />
         <ClerkProvider
           appearance={{
             variables: {

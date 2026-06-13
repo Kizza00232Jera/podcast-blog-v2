@@ -70,3 +70,29 @@ body::before {
 .animate-pulse-soft {
   animation: pulse-soft 1.6s ease-in-out infinite;
 }
+
+/* Moving highlight on the generation progress bar, so a held stage still
+   reads as actively working (it's honest: most of the time is summarizing). */
+.echonotes-bar {
+  position: relative;
+  overflow: hidden;
+}
+.echonotes-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: echonotes-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes echonotes-shimmer {
+  100% { transform: translateX(150%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .echonotes-bar::after { animation: none; }
+}

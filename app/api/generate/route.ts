@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
     user_id: userId,
     is_public: false,
     status: 'generating',
+    stage: 'queued',
   })
 
   await qstash.publishJSON({
