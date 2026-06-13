@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { generationRatelimit } from '@/app/lib/ratelimit'
 import { qstash, appUrl } from '@/app/lib/qstash'
-import { extractVideoId } from '@/app/lib/captions'
+import { extractVideoId } from '@/app/lib/supadata'
 import { createSlug } from '@/app/lib/slug'
 import { createPost } from '@/app/lib/db/queries'
 

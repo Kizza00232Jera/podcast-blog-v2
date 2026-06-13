@@ -1,7 +1,13 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { anthropic, SUMMARY_MODEL } from './anthropic'
-import type { VideoMeta } from './captions'
 import type { PodcastSummary } from '@/app/types/podcast'
+
+export interface SummaryMeta {
+  title: string
+  author: string
+  /** BCP-47-ish language code of the transcript (e.g. "en", "hr"). */
+  lang: string
+}
 
 // What the model returns. A superset of the legacy summary shape: dynamic
 // sections, one woven verbatim quote per major topic, a skimmable takeaways
@@ -19,8 +25,8 @@ export interface GeneratedSummary {
   resources: string[]
 }
 
-// JSON Schema for structured output. Note the structured-output constraints:
-// every object sets additionalProperties:false; no min/maxLength.
+// JSON Schema for structured output. Every object sets additionalProperties:false;
+// no min/maxLength (structured-output constraints).
 const SUMMARY_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -57,18 +63,19 @@ const SUMMARY_SCHEMA = {
 } as const
 
 // Calibrated against the 32,403-char Gen Alpha summary (8 sections, woven
-// quotes, deep narrative). Match or beat that depth — never the thin 2-3
-// paragraph output.
+// quotes, deep narrative). Match or beat that depth; never thin output.
 function systemPrompt(): string {
   return `You are a writer producing a long-form, magazine-quality written summary of a single podcast episode, working from its transcript. Your job is to let a reader who never heard the episode come away understanding it as well as someone who listened.
+
+LANGUAGE: Write the ENTIRE output (overview, every section heading and body, every quote, the key takeaways, and the tags) in the SAME LANGUAGE as the transcript. If the transcript is in Croatian, write in Croatian; if Spanish, Spanish; and so on. Do not translate to English. Quotes must stay in the original spoken language, verbatim.
 
 Depth bar (calibration): aim for 1,500 to 2,200 words of body prose across the sections. Write rich, flowing narrative paragraphs (4 to 6 sentences each, 3 to 4 paragraphs per section). Use the specific facts, names, numbers, studies, stories, and arguments from the transcript. Do not pad, do not get vague, do not write a thin 2-3 paragraph recap.
 
 Structure rules:
-- Produce a DYNAMIC number of sections, 3 to 8, that follow the episode's real structure. Use the chapter list (if provided) to choose the section topics. If there is no chapter list, infer the natural thematic arc from the transcript.
-- Each section "heading" must be specific and descriptive of that section's actual content, like a strong magazine subheading. FORBIDDEN generic headings: "Overview", "Summary", "Introduction", "Conclusion", "Key Takeaways", "Background", "Main Points".
+- Produce a DYNAMIC number of sections, 3 to 8, that follow the episode's real thematic arc, inferred from the transcript.
+- Each section "heading" must be specific and descriptive of that section's actual content, like a strong magazine subheading. FORBIDDEN generic headings: "Overview", "Summary", "Introduction", "Conclusion", "Key Takeaways", "Background", "Main Points" (and their equivalents in the transcript's language).
 - Each section "content": multiple full paragraphs of narrative prose. Separate paragraphs with a blank line. No bullet points inside content.
-- Each section "quote": one short verbatim quote drawn from that section's part of the transcript, capturing its most striking line. Quote real words only. If that section genuinely has no quotable line, use an empty string.
+- Each section "quote": one short verbatim quote drawn from that section's part of the transcript, capturing its most striking line, in the original language. If that section genuinely has no quotable line, use an empty string.
 - "overview": one rich paragraph that works as a lede and orients the reader to the episode, who is on it, and the stakes.
 - "key_takeaways": 4 to 6 crisp, skimmable takeaway sentences.
 - "tags": 3 to 5 specific topic tags.
@@ -78,30 +85,22 @@ Structure rules:
 Write in clear, engaging prose. No em dashes anywhere; use commas or rephrase. Use straight quotes only.`
 }
 
-function buildUserMessage(transcript: string, meta: VideoMeta): string {
-  const chapterBlock =
-    meta.chapters.length > 0
-      ? `\n\nChapter list (use these to choose section topics):\n${meta.chapters
-          .map((c, i) => `${i + 1}. ${c}`)
-          .join('\n')}`
-      : '\n\nNo chapter list available; infer the thematic structure from the transcript.'
-
+function buildUserMessage(transcript: string, meta: SummaryMeta): string {
   return `Episode metadata:
 - Title: ${meta.title || '(unknown)'}
 - Channel/Author: ${meta.author || '(unknown)'}
-- Duration: ${meta.durationMinutes} minutes${chapterBlock}
+- Transcript language code: ${meta.lang}
 
 Transcript:
 """
 ${transcript}
 """
 
-Write the structured summary now.`
+Write the structured summary now, in the transcript's language.`
 }
 
-// Fold the model's section-level quotes up into summary.quotes too, so both
-// the new renderer (section.quote) and the legacy renderer (summary.quotes)
-// have something to show.
+// Fold the model's section-level quotes up into summary.quotes too, so both the
+// new renderer (section.quote) and the legacy renderer (summary.quotes) display.
 export function toStoredSummary(gen: GeneratedSummary): PodcastSummary {
   return {
     overview: gen.summary.overview,
@@ -116,11 +115,11 @@ export function toStoredSummary(gen: GeneratedSummary): PodcastSummary {
   }
 }
 
-// Primary path: we have a transcript. Structured output, streamed (the body
-// can run long), adaptive thinking at high effort.
+// Structured output, streamed (the body can run long), adaptive thinking at high
+// effort. Writes in the transcript's own language.
 export async function summarizeFromTranscript(
   transcript: string,
-  meta: VideoMeta
+  meta: SummaryMeta
 ): Promise<GeneratedSummary> {
   const stream = anthropic.messages.stream({
     model: SUMMARY_MODEL,
@@ -140,60 +139,4 @@ export async function summarizeFromTranscript(
     .map((b) => b.text)
     .join('')
   return JSON.parse(text) as GeneratedSummary
-}
-
-// Fallback path: no captions. Let Claude research the episode with web_search,
-// then return the same JSON shape. Server tools run a sampling loop, so we
-// resume on pause_turn. Output is parsed tolerantly from the final text.
-export async function summarizeWithWebSearch(
-  url: string,
-  meta: VideoMeta
-): Promise<GeneratedSummary> {
-  const userMsg = `I could not retrieve captions for this YouTube podcast episode. Research it with web_search (look for the transcript, show notes, official description, and discussion) and then write the summary.
-
-Episode metadata:
-- URL: ${url}
-- Title: ${meta.title || '(unknown)'}
-- Channel/Author: ${meta.author || '(unknown)'}
-- Duration: ${meta.durationMinutes} minutes
-
-After researching, output ONLY a single JSON object (no prose, no code fences) matching exactly this shape:
-{"title": str, "podcast_name": str, "creator": str, "tags": [str], "summary": {"overview": str, "sections": [{"heading": str, "content": str, "quote": str}], "key_takeaways": [str]}, "resources": [str]}
-
-Follow all the depth and structure rules from the system prompt.`
-
-  const messages: Anthropic.MessageParam[] = [{ role: 'user', content: userMsg }]
-  const tools = [{ type: 'web_search_20260209', name: 'web_search' }] as const
-
-  let message: Anthropic.Message | null = null
-  for (let i = 0; i < 6; i++) {
-    const stream = anthropic.messages.stream({
-      model: SUMMARY_MODEL,
-      max_tokens: 32000,
-      thinking: { type: 'adaptive' },
-      output_config: { effort: 'high' },
-      system: systemPrompt(),
-      tools: tools as unknown as Anthropic.ToolUnion[],
-      messages,
-    })
-    message = await stream.finalMessage()
-    if (message.stop_reason === 'pause_turn') {
-      messages.push({ role: 'assistant', content: message.content })
-      continue
-    }
-    break
-  }
-
-  const text = (message?.content ?? [])
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-  return parseSummaryJson(text)
-}
-
-function parseSummaryJson(text: string): GeneratedSummary {
-  const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-  const match = cleaned.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('Model did not return JSON for the summary.')
-  return JSON.parse(match[0]) as GeneratedSummary
 }
