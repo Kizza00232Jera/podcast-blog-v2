@@ -24,15 +24,7 @@ export default async function Header() {
 
         <div className="flex items-center gap-3">
           {userId ? (
-            <>
-              <Link
-                href="/upload"
-                className="text-sm font-medium text-ink-soft hover:text-ink transition-colors"
-              >
-                Generate
-              </Link>
-              <UserButton />
-            </>
+            <UserButton showName />
           ) : (
             <>
               <SignInButton mode="modal">
