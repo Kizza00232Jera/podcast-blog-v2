@@ -1,190 +1,147 @@
+<h1 align="center">Echonotes</h1>
+
 <p align="center">
-  <img src="docs/hero.svg" alt="Podcast Blog" width="700"/>
+  <b>Paste a YouTube podcast link. Get a rich, readable written summary, in the podcast's own language.</b>
 </p>
 
 <p align="center">
   <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white"/>
+  <img alt="React" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white"/>
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white"/>
-  <img alt="Supabase" src="https://img.shields.io/badge/Supabase-3ECF8E?logo=supabase&logoColor=white"/>
+  <img alt="Claude" src="https://img.shields.io/badge/Claude-Opus_4.8-D97757?logo=anthropic&logoColor=white"/>
+  <img alt="Neon" src="https://img.shields.io/badge/Neon_Postgres-00E599?logo=postgresql&logoColor=white"/>
+  <img alt="Clerk" src="https://img.shields.io/badge/Clerk-Auth-6C47FF?logo=clerk&logoColor=white"/>
   <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white"/>
-  <img alt="Perplexity AI" src="https://img.shields.io/badge/Perplexity_AI-1a1a2e?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgZmlsbD0id2hpdGUiLz48L3N2Zz4=&logoColor=white"/>
 </p>
 
 <p align="center">
-  <a href="https://podcast-blog-v2.vercel.app">Live Demo</a> · <a href="#getting-started">Getting Started</a> · <a href="#features">Features</a> · <a href="#project-structure">Project Structure</a>
+  <a href="https://podcast-blog-v2.vercel.app">Live app</a> · <a href="#how-it-works">How it works</a> · <a href="#getting-started">Getting started</a> · <a href="#tech-stack">Tech stack</a>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/demo.gif" alt="Podcast Blog Demo" width="700"/>
+  <img src="docs/screenshots/homepage.png" alt="Echonotes home" width="760"/>
 </p>
 
-## Podcast Blog is an AI-powered platform that turns YouTube podcasts into detailed written articles
+## What it is
 
-Paste a YouTube podcast link and [Podcast Blog](https://podcast-blog-v2.vercel.app) automatically generates a comprehensive written article including:
+Every week I watch podcasts across tech, football, and business, and a week later I can barely recall the key points. Echonotes fixes that. You paste a YouTube podcast link, and Claude reads the episode's real captions and writes a structured article you can scan in five minutes: a one line lede, several themed sections that follow the episode's actual arc, one woven verbatim quote per topic, and a short list of key takeaways.
 
-- [**AI Summarization**](app/api/generate/route.ts): Generates structured articles from YouTube podcast episodes using Perplexity AI's `sonar-reasoning-pro` model with section breakdowns, notable quotes, key takeaways, and actionable advice.
-- [**Smart Search & Filtering**](app/components/podcast/PodcastGrid.tsx): Search by title, creator, or podcast name. Filter by podcast or tags. Sort by newest, oldest, highest rated, longest, or shortest.
-- [**Star Ratings**](app/components/podcast/PodcastCard.tsx): Rate podcast episodes from 1 to 5 stars to keep track of your favorites.
-- [**YouTube Integration**](app/api/generate/route.ts): Automatically extracts metadata, thumbnails, and video information directly from YouTube URLs via oEmbed API.
-- [**Authentication**](app/(auth)): Secure login with email/password or GitHub OAuth powered by Supabase Auth.
-- [**Progressive Web App**](next.config.ts): Installable on any device with offline support via next-pwa.
-- [**Responsive Design**](app/globals.css): Fully optimized for desktop, tablet, and mobile devices.
+The work runs in the background on hosted infrastructure, so it finishes even with your computer switched off. Anonymous visitors get a read only public showcase; signed in users get their own private library.
 
-## Table of Contents
+## Features
 
-- [Podcast Blog is an AI-powered platform that turns YouTube podcasts into detailed written articles](#podcast-blog-is-an-ai-powered-platform-that-turns-youtube-podcasts-into-detailed-written-articles)
-- [Table of Contents](#table-of-contents)
-- [Screenshots](#screenshots)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Database Setup](#database-setup)
-- [Setting Up Podcast Blog](#setting-up-podcast-blog)
-- [Project Structure](#project-structure)
-- [API Integrations](#api-integrations)
-- [Deployment](#deployment)
+- **Summaries by Claude Opus 4.8** ([`app/lib/summarize.ts`](app/lib/summarize.ts)): a calibrated prompt produces deep, magazine quality summaries (1,500 to 2,200 words, dynamic sections, woven quotes, key takeaways) using structured output, not thin recaps.
+- **Original language output**: a Croatian podcast gets a Croatian summary, a Spanish one gets Spanish. The model writes in the transcript's own language.
+- **Real transcripts, captions first** ([`app/lib/transcript`](app/lib/transcript)): a multi provider layer (Supadata, then TranscriptAPI) fetches existing YouTube captions, with per provider monthly budget guards so a free tier can never be drained or locked out.
+- **Background generation** ([`app/api/worker/route.ts`](app/api/worker/route.ts)): clicking Generate inserts a placeholder and hands the heavy work to a QStash queue, then the card fills itself in with a live, stage based progress bar (queued, fetching transcript, writing summary).
+- **Auth and a public showcase** ([`middleware.ts`](middleware.ts)): Clerk handles sign in (Google, GitHub, email). Anonymous visitors browse the showcase; registering gives you a private library.
+- **Rate limited** ([`app/lib/ratelimit.ts`](app/lib/ratelimit.ts)): Upstash limits generations per user per day to keep costs predictable.
+- **Installable PWA**: warm dark audio identity, an opening splash, installable on any device.
 
 ## Screenshots
 
 <table>
   <tr>
-    <td align="center"><b>Homepage</b></td>
-    <td align="center"><b>Podcast Detail</b></td>
+    <td align="center"><b>Reading view</b></td>
+    <td align="center"><b>Mobile</b></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/homepage.png" alt="Homepage" width="400"/></td>
-    <td><img src="docs/screenshots/detail.png" alt="Podcast Detail" width="400"/></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Upload & Generate</b></td>
-    <td align="center"><b>Mobile View</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/upload.png" alt="Upload" width="400"/></td>
-    <td><img src="docs/screenshots/mobile.png" alt="Mobile" width="400"/></td>
+    <td><img src="docs/screenshots/reading.png" alt="Article reading view" width="420"/></td>
+    <td><img src="docs/screenshots/mobile.png" alt="Mobile view" width="220"/></td>
   </tr>
 </table>
 
-## Getting Started
+## How it works
+
+```
+Paste URL ─▶ /api/generate ─▶ insert "generating" row ─▶ QStash queue
+                                                              │
+                                                              ▼
+                                   /api/worker (signature verified)
+                                   1. fetch captions (Supadata ▸ TranscriptAPI)
+                                   2. summarize with Claude Opus 4.8 (structured output)
+                                   3. save ─▶ card flips to the finished summary
+```
+
+The request returns immediately, so there are no timeouts and retries are automatic. Captions only by design: videos with no captions report a clear message rather than running expensive audio transcription.
+
+## Tech stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 16 (App Router), React 19, TypeScript |
+| AI | Claude Opus 4.8 via the Anthropic SDK (structured output, adaptive thinking) |
+| Transcripts | Supadata + TranscriptAPI (captions only, budget guarded) |
+| Database | Neon Postgres + Drizzle ORM |
+| Auth | Clerk |
+| Background jobs | Upstash QStash |
+| Rate limiting | Upstash Redis |
+| Styling | Tailwind CSS 4 |
+| Hosting | Vercel |
+
+## Getting started
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18 or higher
-- A [Supabase](https://supabase.com/) account and project
-- A [Perplexity AI](https://www.perplexity.ai/) API key
+- Node.js 20+
+- Accounts/keys for: [Anthropic](https://console.anthropic.com), [Neon](https://neon.tech), [Clerk](https://clerk.com), [Upstash](https://upstash.com) (Redis + QStash), and a transcript provider ([Supadata](https://supadata.ai), optional [TranscriptAPI](https://transcriptapi.com))
 
 ### Installation
 
 ```bash
-git clone https://github.com/kizza00232jera/podcast-blog-v2.git
+git clone https://github.com/Kizza00232Jera/podcast-blog-v2.git
 cd podcast-blog-v2
 npm install
 ```
 
-Create a `.env.local` file in the project root:
+### Environment
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-PERPLEXITY_API_KEY=your-perplexity-api-key
-```
-
-| Variable | Description | Where to Get It |
-|----------|-------------|-----------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL | [Supabase Dashboard](https://app.supabase.com/) → Settings → API |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous/public key | [Supabase Dashboard](https://app.supabase.com/) → Settings → API |
-| `PERPLEXITY_API_KEY` | Perplexity AI API key | [Perplexity Settings](https://www.perplexity.ai/settings/api) |
-
-### Database Setup
-
-In your Supabase project, create the `podcast_posts` table:
-
-```sql
-create table podcast_posts (
-  id uuid default gen_random_uuid() primary key,
-  slug text unique not null,
-  title text not null,
-  podcast_name text,
-  creator text,
-  source_link text,
-  thumbnail_url text,
-  duration_minutes integer,
-  rating integer,
-  tags text[],
-  summary jsonb,
-  key_takeaways text,
-  actionable_advice text,
-  resources text,
-  user_id uuid references auth.users(id),
-  created_at timestamptz default now()
-);
-```
-
-## Setting Up Podcast Blog
-
-Once you've completed the installation and database setup, start the development server:
+Copy your keys into `.env.local` (gitignored):
 
 ```bash
-npm run dev
+ANTHROPIC_API_KEY=
+DATABASE_URL=                 # Neon pooled connection (app runtime)
+DATABASE_URL_UNPOOLED=        # Neon direct connection (Drizzle migrations)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+QSTASH_URL=https://qstash-eu-central-1.upstash.io
+QSTASH_TOKEN=
+QSTASH_CURRENT_SIGNING_KEY=
+QSTASH_NEXT_SIGNING_KEY=
+SUPADATA_API_KEY=             # transcript provider
+TRANSCRIPTAPI_API_KEY=        # optional fallback
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser. You can:
+### Database and run
 
-1. **Sign up** with email/password or GitHub OAuth
-2. **Navigate to Upload** and paste any YouTube podcast URL
-3. **Click Generate** — the AI will analyze the podcast and create a full written article
-4. **Browse your library** on the homepage with search, filters, and sorting
-5. **Rate episodes** and organize them by tags
+```bash
+npm run db:push   # create the schema in Neon
+npm run dev       # http://localhost:3000
+```
 
-## Project Structure
+> Background generation calls back to `NEXT_PUBLIC_APP_URL/api/worker` via QStash, which needs a publicly reachable URL, so the Generate flow completes in a deployed environment rather than on localhost.
+
+## Project structure
 
 ```
 app/
-├── (auth)/                        # Auth pages (login, signup)
-│   ├── login/page.tsx             # Email + GitHub OAuth login
-│   └── signup/page.tsx            # User registration
-├── (main)/                        # Protected routes (requires auth)
-│   ├── page.tsx                   # Homepage — podcast grid + stats dashboard
-│   ├── upload/page.tsx            # YouTube URL input → AI generation
-│   └── podcast/[slug]/page.tsx    # Full podcast article view
-├── api/
-│   ├── generate/route.ts          # POST endpoint — Perplexity AI integration
-│   └── auth/callback/route.ts     # OAuth callback handler
-├── components/
-│   ├── ui/Header.tsx              # Navigation bar with sign out
-│   └── podcast/
-│       ├── PodcastGrid.tsx        # Search, filter, sort grid
-│       ├── PodcastCard.tsx        # Individual podcast card
-│       └── DeleteButton.tsx       # Delete podcast action
-├── lib/supabase/
-│   ├── client.ts                  # Browser Supabase client
-│   └── server.ts                  # Server Supabase client
-├── types/podcast.ts               # TypeScript interfaces
-├── layout.tsx                     # Root layout + PWA manifest
-└── globals.css                    # Tailwind global styles
+  (main)/                 home (showcase / library), upload, podcast/[slug] article
+  api/generate/route.ts   enqueue a generation
+  api/worker/route.ts     QStash worker: captions -> Claude -> save
+  lib/transcript/         multi-provider captions layer (budget guarded)
+  lib/summarize.ts        calibrated Opus 4.8 prompt + structured output
+  lib/db/                 Drizzle schema, client, queries
+  components/             gallery cards, progress bar, splash, header
+middleware.ts             Clerk auth + public showcase
 ```
-
-## API Integrations
-
-**[Perplexity AI](https://www.perplexity.ai/)** — Powers the core content generation. The [`/api/generate`](app/api/generate/route.ts) endpoint sends a structured prompt to the `sonar-reasoning-pro` model, which returns a detailed JSON article with sections, quotes, takeaways, and metadata.
-
-**[YouTube oEmbed](https://oembed.com/)** — Extracts video metadata (title, author) from YouTube URLs before sending to the AI model, providing additional context for richer generation results.
-
-**[Supabase](https://supabase.com/)** — Handles user authentication (email/password + GitHub OAuth) and stores all podcast data in PostgreSQL. The [`lib/supabase`](app/lib/supabase) directory contains both browser and server client configurations.
 
 ## Deployment
 
-The easiest way to deploy is with [Vercel](https://vercel.com/):
-
-1. Push your code to GitHub
-2. Import the repository on [Vercel](https://vercel.com/new)
-3. Add your environment variables in the Vercel dashboard
-4. Deploy
-
-> **Important:** Add your Vercel deployment URL to your Supabase project's allowed redirect URLs under **Authentication → URL Configuration**.
+Deployed on Vercel. Push the environment variables to the project, set `NEXT_PUBLIC_APP_URL` to the production URL (so QStash callbacks resolve), and deploy. The repo is Git connected, so pushes to `master` redeploy automatically.
 
 ---
 
-<p align="center">
-  <b>Built with Next.js, Supabase, and Perplexity AI</b>
-</p>
+<p align="center"><sub>Built with Claude Code.</sub></p>

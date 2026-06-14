@@ -76,7 +76,8 @@ export async function POST(request: NextRequest) {
     actionable_advice: [],
     resources: [],
     user_id: userId,
-    is_public: false,
+    // The owner's podcasts make up the public showcase; other users' stay private.
+    is_public: userId === UNLIMITED_USER_ID,
     status: 'generating',
     stage: 'queued',
   })
