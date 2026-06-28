@@ -142,6 +142,6 @@ middleware.ts             Clerk auth + public showcase
 
 Deployed on Vercel. Push the environment variables to the project, set `NEXT_PUBLIC_APP_URL` to the production URL (so QStash callbacks resolve), and deploy. The repo is Git connected, so pushes to `master` redeploy automatically.
 
----
+## License
 
-<p align="center"><sub>Built with Claude Code.</sub></p>
+[MIT](LICENSE) © Antonio Jerković
