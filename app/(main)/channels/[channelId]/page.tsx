@@ -5,7 +5,6 @@ import { getChannel } from '@/app/lib/db/channel-queries'
 import { getVideoStatuses } from '@/app/lib/db/video-status'
 import { fetchUploadsPage, fetchDurations, uploadsPlaylistId } from '@/app/lib/youtube'
 import ChannelVideoBrowser from '@/app/components/videos/ChannelVideoBrowser'
-import GeneratingPoller from '@/app/components/podcast/GeneratingPoller'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,14 +38,9 @@ export default async function ChannelPage({
   }
 
   const statuses = await getVideoStatuses(userId)
-  const anyGenerating = Object.values(statuses).some(
-    (s) => s.status === 'generating'
-  )
 
   return (
     <div>
-      <GeneratingPoller active={anyGenerating} />
-
       <Link
         href="/channels"
         className="text-sm text-ink-muted hover:text-ink transition-colors"

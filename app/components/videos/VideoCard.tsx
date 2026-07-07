@@ -26,19 +26,24 @@ export default function VideoCard({
   video,
   status,
   onHide,
+  onGenerated,
 }: {
   video: VideoItem
   status?: VideoStatusItem
   onHide?: (videoId: string) => void
+  /** Fired after a generate POST is accepted — lets the list start polling. */
+  onGenerated?: () => void
 }) {
-  // Local override so the button flips to "Generating…" immediately.
+  // Local override so the button flips to "Generating…" immediately. The
+  // server status always wins once it exists (the poller refreshes it to
+  // 'generating' and then 'ready'), so the local flag only bridges the gap
+  // between the click and the next refresh.
   const [localGenerating, setLocalGenerating] = useState(false)
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
 
-  const effective: VideoStatusItem | undefined = localGenerating
-    ? { status: 'generating', slug: '' }
-    : status
+  const effective: VideoStatusItem | undefined =
+    status ?? (localGenerating ? { status: 'generating', slug: '' } : undefined)
 
   async function generate() {
     setPending(true)
@@ -58,6 +63,7 @@ export default function VideoCard({
       return
     }
     setLocalGenerating(true)
+    onGenerated?.()
   }
 
   return (
@@ -82,7 +88,7 @@ export default function VideoCard({
             type="button"
             aria-label="Hide from feed"
             onClick={() => onHide(video.videoId)}
-            className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-canvas/70 text-ink-muted opacity-0 backdrop-blur-sm transition-opacity hover:text-ink group-hover:opacity-100"
+            className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-canvas/70 text-ink-muted backdrop-blur-sm transition-colors hover:text-ink"
           >
             ✕
           </button>

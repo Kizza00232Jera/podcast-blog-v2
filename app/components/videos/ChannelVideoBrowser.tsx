@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import VideoCard, {
   type VideoItem,
   type VideoStatusItem,
 } from './VideoCard'
+import GeneratingPoller from '@/app/components/podcast/GeneratingPoller'
 
 // Client half of the channel page: renders the server-fetched first page and
 // appends more via /api/channels/[id]/videos. The status map covers the
@@ -24,6 +25,15 @@ export default function ChannelVideoBrowser({
   const [nextPageToken, setNextPageToken] = useState(initialNextPageToken)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // Same click-to-poll handoff as FeedList: a local kick starts the poller,
+  // the server-reported 'generating' status takes over on the next refresh.
+  const [localKick, setLocalKick] = useState(0)
+  const serverGenerating = Object.values(statuses).some(
+    (s) => s.status === 'generating'
+  )
+  useEffect(() => {
+    if (serverGenerating) setLocalKick(0)
+  }, [serverGenerating])
 
   async function loadMore() {
     if (!nextPageToken) return
@@ -47,9 +57,15 @@ export default function ChannelVideoBrowser({
 
   return (
     <div>
+      <GeneratingPoller active={serverGenerating || localKick > 0} />
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {videos.map((v) => (
-          <VideoCard key={v.videoId} video={v} status={statuses[v.videoId]} />
+          <VideoCard
+            key={v.videoId}
+            video={v}
+            status={statuses[v.videoId]}
+            onGenerated={() => setLocalKick((k) => k + 1)}
+          />
         ))}
       </div>
 
