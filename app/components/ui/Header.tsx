@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { auth } from '@clerk/nextjs/server'
 import { SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
+import NavTabs from './NavTabs'
 
 // Server component: gate on auth() rather than <SignedIn>/<SignedOut>, which
 // this Clerk version no longer exports from the package root.
@@ -24,7 +25,10 @@ export default async function Header() {
 
         <div className="flex items-center gap-3">
           {userId ? (
-            <UserButton showName />
+            <>
+              <NavTabs />
+              <UserButton showName />
+            </>
           ) : (
             <>
               <SignInButton mode="modal">
