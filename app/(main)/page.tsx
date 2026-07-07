@@ -4,6 +4,7 @@ import Link from 'next/link'
 import PodcastGrid from '@/app/components/podcast/PodcastGrid'
 import GeneratingPoller from '@/app/components/podcast/GeneratingPoller'
 import { getPublicPosts, getUserPosts } from '@/app/lib/db/queries'
+import { getChannels } from '@/app/lib/db/channel-queries'
 import type { PodcastPost } from '@/app/types/podcast'
 
 export default async function HomePage() {
@@ -12,6 +13,14 @@ export default async function HomePage() {
   const list = (
     userId ? await getUserPosts(userId) : await getPublicPosts()
   ) as unknown as PodcastPost[]
+
+  // Avatars for the library's channel filter chips.
+  const channelAvatars: Record<string, string | null> = {}
+  if (userId) {
+    for (const c of await getChannels(userId)) {
+      channelAvatars[c.channel_id] = c.thumbnail_url
+    }
+  }
 
   const anyGenerating = list.some((p) => p.status === 'generating')
   const ready = list.filter((p) => p.status === 'ready')
@@ -73,7 +82,11 @@ export default async function HomePage() {
       )}
 
       {list.length > 0 ? (
-        <PodcastGrid podcasts={list} />
+        <PodcastGrid
+          podcasts={list}
+          channelAvatars={channelAvatars}
+          showChannelChips={!!userId}
+        />
       ) : userId ? (
         <div className="rounded-[var(--radius-card)] border border-dashed border-line-strong py-20 text-center">
           <p className="text-ink-muted">Nothing here yet.</p>

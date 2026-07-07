@@ -18,6 +18,10 @@ export interface PodcastPost {
     status: 'generating' | 'ready' | 'error';
     stage: 'queued' | 'transcribing' | 'summarizing' | null;
     error_message: string | null;
+    // YouTube linkage — set on summaries generated from feed/channel cards;
+    // null on legacy paste-a-link rows.
+    channel_id: string | null;
+    video_id: string | null;
     created_at: string;
 }
 
