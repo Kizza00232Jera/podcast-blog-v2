@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { youtubeUrl } = await request.json().catch(() => ({}))
+  const { youtubeUrl, channelId } = await request.json().catch(() => ({}))
   if (!youtubeUrl || typeof youtubeUrl !== 'string') {
     return NextResponse.json({ error: 'A YouTube URL is required.' }, { status: 400 })
   }
@@ -80,6 +80,10 @@ export async function POST(request: NextRequest) {
     is_public: userId === UNLIMITED_USER_ID,
     status: 'generating',
     stage: 'queued',
+    // YouTube linkage: video id always (drives feed badges), channel id when
+    // the generation came from a feed/channel card (drives the library filter).
+    video_id: videoId,
+    channel_id: typeof channelId === 'string' && channelId ? channelId : null,
   })
 
   await qstash.publishJSON({
