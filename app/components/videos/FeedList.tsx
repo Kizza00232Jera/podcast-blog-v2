@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import VideoCard, {
   type VideoItem,
   type VideoStatusItem,
@@ -28,9 +28,8 @@ export default function FeedList({
   )
   // Once the server reports the new row, its status drives the poller and the
   // local kick retires — otherwise a finished batch would poll forever.
-  useEffect(() => {
-    if (serverGenerating) setLocalKick(0)
-  }, [serverGenerating])
+  // (Adjust-state-during-render pattern, not an effect.)
+  if (serverGenerating && localKick > 0) setLocalKick(0)
   const anyGenerating = serverGenerating || localKick > 0
 
   function hide(videoId: string) {

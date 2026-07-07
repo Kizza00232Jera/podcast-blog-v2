@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import VideoCard, {
   type VideoItem,
   type VideoStatusItem,
@@ -31,9 +31,8 @@ export default function ChannelVideoBrowser({
   const serverGenerating = Object.values(statuses).some(
     (s) => s.status === 'generating'
   )
-  useEffect(() => {
-    if (serverGenerating) setLocalKick(0)
-  }, [serverGenerating])
+  // Server status takes over → retire the local kick (render-adjust pattern).
+  if (serverGenerating && localKick > 0) setLocalKick(0)
 
   async function loadMore() {
     if (!nextPageToken) return
