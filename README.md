@@ -35,7 +35,9 @@ The work runs in the background on hosted infrastructure, so it finishes even wi
 - **Real transcripts, captions first** ([`app/lib/transcript`](app/lib/transcript)): a multi provider layer (Supadata, then TranscriptAPI) fetches existing YouTube captions, with per provider monthly budget guards so a free tier can never be drained or locked out.
 - **Background generation** ([`app/api/worker/route.ts`](app/api/worker/route.ts)): clicking Generate inserts a placeholder and hands the heavy work to a QStash queue, then the card fills itself in with a live, stage based progress bar (queued, fetching transcript, writing summary).
 - **Auth and a public showcase** ([`middleware.ts`](middleware.ts)): Clerk handles sign in (Google, GitHub, email). Anonymous visitors browse the showcase; registering gives you a private library.
-- **Rate limited** ([`app/lib/ratelimit.ts`](app/lib/ratelimit.ts)): Upstash limits generations per user per day to keep costs predictable.
+- **YouTube subscriptions & feed** ([`app/lib/youtube`](app/lib/youtube), [`docs/youtube-setup.md`](docs/youtube-setup.md)): connect your Google account (Clerk-managed OAuth, `youtube.readonly`), sync your subscriptions, and toggle the channels that publish podcasts. Their new full-length episodes land in a feed (quota-free RSS refresh, shorts and clips filtered out) with **one-click generation** and summarized/generating badges; the library gains channel avatar filter chips.
+- **AI-hub subscription routing** ([`app/lib/anthropic.ts`](app/lib/anthropic.ts)): when my local AI-hub gateway is up, summaries are served from the Claude subscription, with automatic fallback to API credits when it isn't.
+- **Rate limited** ([`app/lib/ratelimit.ts`](app/lib/ratelimit.ts)): Upstash limits generations per user per day (5 when the hub serves subscription usage, 3 on API credits) to keep costs predictable.
 - **Installable PWA**: warm dark audio identity, an opening splash, installable on any device.
 
 ## Screenshots
