@@ -6,7 +6,6 @@ import { getFeedVideos } from '@/app/lib/db/feed-queries'
 import { getVideoStatuses } from '@/app/lib/db/video-status'
 import { refreshFeed } from '@/app/lib/feed-refresh'
 import FeedList from '@/app/components/videos/FeedList'
-import GeneratingPoller from '@/app/components/podcast/GeneratingPoller'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,14 +47,9 @@ export default async function FeedPage() {
     getFeedVideos(userId),
     getVideoStatuses(userId),
   ])
-  const anyGenerating = Object.values(statuses).some(
-    (s) => s.status === 'generating'
-  )
 
   return (
     <div>
-      <GeneratingPoller active={anyGenerating} />
-
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
           <h1 className="font-ui text-3xl font-bold tracking-tight text-ink">

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import VideoCard, {
   type VideoItem,
   type VideoStatusItem,
 } from './VideoCard'
+import GeneratingPoller from '@/app/components/podcast/GeneratingPoller'
 import { hideVideoAction } from '@/app/lib/feed-actions'
 
 // Feed grid with optimistic hide: the card disappears immediately, the
@@ -17,7 +18,20 @@ export default function FeedList({
   statuses: Record<string, VideoStatusItem>
 }) {
   const [hidden, setHidden] = useState<Set<string>>(new Set())
+  // Set when a generate is clicked here, so polling starts immediately;
+  // once the server reports the row, its own status keeps the poller alive.
+  const [localKick, setLocalKick] = useState(0)
   const [, startTransition] = useTransition()
+
+  const serverGenerating = Object.values(statuses).some(
+    (s) => s.status === 'generating'
+  )
+  // Once the server reports the new row, its status drives the poller and the
+  // local kick retires — otherwise a finished batch would poll forever.
+  useEffect(() => {
+    if (serverGenerating) setLocalKick(0)
+  }, [serverGenerating])
+  const anyGenerating = serverGenerating || localKick > 0
 
   function hide(videoId: string) {
     setHidden((h) => new Set(h).add(videoId))
@@ -47,12 +61,14 @@ export default function FeedList({
 
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <GeneratingPoller active={anyGenerating} />
       {visible.map((v) => (
         <VideoCard
           key={v.videoId}
           video={v}
           status={statuses[v.videoId]}
           onHide={hide}
+          onGenerated={() => setLocalKick((k) => k + 1)}
         />
       ))}
     </div>
