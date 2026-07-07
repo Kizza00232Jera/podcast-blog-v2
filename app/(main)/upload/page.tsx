@@ -70,7 +70,8 @@ export default function UploadPage() {
         )}
 
         <p className="mt-4 text-xs text-ink-muted">
-          3 generations per day. Best results on podcasts with captions.
+          Limited generations per day (5 when the hub is live, otherwise 3).
+          Best results on podcasts with captions.
         </p>
       </div>
     </div>
