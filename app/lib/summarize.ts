@@ -1,5 +1,11 @@
 import type Anthropic from '@anthropic-ai/sdk'
-import { anthropic, SUMMARY_MODEL } from './anthropic'
+import {
+  anthropic,
+  anthropicFallback,
+  hubConfigured,
+  isGatewayFailure,
+  SUMMARY_MODEL,
+} from './anthropic'
 import type { PodcastSummary } from '@/app/types/podcast'
 
 export interface SummaryMeta {
@@ -259,9 +265,17 @@ export async function summarizeFromTranscript(
   // amortized cost overhead is the violation rate (a few percent at worst).
   // If a retry pushes past the function timeout, the QStash queue redelivers
   // the job, so nothing is lost.
+  // The hub's subscription route (claude CLI) doesn't enforce output_config,
+  // so when routed through the hub the schema also rides along in the prompt
+  // — the API-credits path still gets hard enforcement either way.
+  const hubFormatNote = hubConfigured
+    ? '\n\nOutput format (mandatory): respond with ONLY a raw JSON object — no markdown fences, no prose before or after — that validates against this JSON Schema:\n' +
+      JSON.stringify(SUMMARY_SCHEMA)
+    : ''
+
   let retryNote = ''
   for (let attempt = 0; ; attempt++) {
-    const stream = anthropic.messages.stream({
+    const params: Anthropic.MessageStreamParams = {
       model: SUMMARY_MODEL,
       max_tokens: 16000,
       thinking: { type: 'adaptive' },
@@ -273,15 +287,45 @@ export async function summarizeFromTranscript(
         format: { type: 'json_schema', schema: SUMMARY_SCHEMA },
       },
       system: systemPrompt(targetLanguage),
-      messages: [{ role: 'user', content: buildUserMessage(input, meta, targetLanguage) + retryNote }],
-    })
+      messages: [
+        {
+          role: 'user',
+          content:
+            buildUserMessage(input, meta, targetLanguage) +
+            hubFormatNote +
+            retryNote,
+        },
+      ],
+    }
 
-    const message = await stream.finalMessage()
+    // Hub first; if the gateway/tunnel is down, retry direct-to-Anthropic
+    // with the fallback key (API credits).
+    let message: Anthropic.Message
+    try {
+      message = await anthropic.messages.stream(params).finalMessage()
+    } catch (err) {
+      if (anthropicFallback && isGatewayFailure(err)) {
+        message = await anthropicFallback.messages.stream(params).finalMessage()
+      } else {
+        throw err
+      }
+    }
+
     const text = message.content
       .filter((b): b is Anthropic.TextBlock => b.type === 'text')
       .map((b) => b.text)
       .join('')
-    const gen = JSON.parse(text) as GeneratedSummary
+    let gen: GeneratedSummary
+    try {
+      gen = JSON.parse(stripCodeFences(text)) as GeneratedSummary
+    } catch {
+      // Malformed JSON only really happens on the hub's CLI route. One retry
+      // with an explicit complaint; after that, surface the failure.
+      if (attempt > 0) throw new Error('The model returned malformed JSON.')
+      retryNote =
+        '\n\nYour previous attempt was rejected: it was not a single valid raw JSON object. Return ONLY the JSON object.'
+      continue
+    }
     const problems = attempt === 0 ? validateSummary(gen, targetLanguage) : []
     if (problems.length === 0) return gen
     retryNote =
@@ -289,4 +333,13 @@ export async function summarizeFromTranscript(
       problems.join('\n- ') +
       '\nRegenerate the complete summary with every violation fixed.'
   }
+}
+
+/** CLI-route responses sometimes arrive wrapped in ```json fences. */
+function stripCodeFences(text: string): string {
+  return text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/```\s*$/, '')
+    .trim()
 }

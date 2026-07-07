@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { generationRatelimit } from '@/app/lib/ratelimit'
+import { getGenerationRatelimit } from '@/app/lib/ratelimit'
 import { qstash, appUrl } from '@/app/lib/qstash'
 import { extractVideoId } from '@/app/lib/transcript'
 import { createSlug } from '@/app/lib/slug'
@@ -31,13 +31,15 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // 3 generations/day/user (shared Redis -> the pcast:ratelimit:gen prefix).
-  // The owner account is exempt.
+  // Daily limit (shared Redis -> the pcast:ratelimit:gen prefix): 5/day when
+  // the AI hub serves generations from the subscription, 3/day on API
+  // credits. The owner account is exempt.
   if (userId !== UNLIMITED_USER_ID) {
-    const { success } = await generationRatelimit.limit(userId)
+    const { ratelimit, max } = await getGenerationRatelimit()
+    const { success } = await ratelimit.limit(userId)
     if (!success) {
       return NextResponse.json(
-        { error: 'Daily limit reached (3 per day). Try again tomorrow.' },
+        { error: `Daily limit reached (${max} per day). Try again tomorrow.` },
         { status: 429 }
       )
     }
