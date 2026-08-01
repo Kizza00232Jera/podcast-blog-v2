@@ -1,13 +1,37 @@
 import 'server-only'
 import { db } from './index'
 import { podcastPosts, type NewPodcastRow, type PodcastRow } from './schema'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, lt, sql } from 'drizzle-orm'
 
 // All reads/writes go through the pooled DATABASE_URL (db). Auth/ownership is
 // enforced here in app code now that we're off Supabase RLS.
 
+// A worker run either finishes or self-reports an error well within Vercel's
+// 300s function cap (see WORKER_TIMEOUT_MS in app/api/worker/route.ts). If a
+// row is still 'generating' past this, the worker was killed/crashed without
+// running its catch block (platform OOM, or QStash exhausting all retries
+// silently) — the row is orphaned. Reap it on the next read so the UI stops
+// polling forever instead of needing manual DB surgery.
+const STUCK_GENERATING_MINUTES = 10
+
+async function reapStaleGenerating(): Promise<void> {
+  await db
+    .update(podcastPosts)
+    .set({
+      status: 'error',
+      error_message: 'Generation timed out.',
+    })
+    .where(
+      and(
+        eq(podcastPosts.status, 'generating'),
+        lt(podcastPosts.created_at, sql`now() - interval '${sql.raw(String(STUCK_GENERATING_MINUTES))} minutes'`)
+      )
+    )
+}
+
 /** Public showcase gallery — what anonymous visitors and everyone else can see. */
 export async function getPublicPosts(): Promise<PodcastRow[]> {
+  await reapStaleGenerating()
   return db
     .select()
     .from(podcastPosts)
@@ -17,6 +41,7 @@ export async function getPublicPosts(): Promise<PodcastRow[]> {
 
 /** A signed-in user's own private library. */
 export async function getUserPosts(userId: string): Promise<PodcastRow[]> {
+  await reapStaleGenerating()
   return db
     .select()
     .from(podcastPosts)

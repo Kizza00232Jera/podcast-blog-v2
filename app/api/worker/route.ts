@@ -14,6 +14,12 @@ import {
 export const maxDuration = 300
 export const dynamic = 'force-dynamic'
 
+// Race the pipeline against a timer under maxDuration so a hung transcript
+// fetch or model call hits *our* catch block and records status: 'error'
+// before the platform kills the function outright — a platform kill skips
+// the catch entirely and leaves the row stuck at 'generating' forever.
+const WORKER_TIMEOUT_MS = 270_000
+
 // QStash delivers {postId, youtubeUrl}. verifySignatureAppRouter checks the
 // request signature so only QStash can trigger generation. Captions-only:
 // fetch existing captions (multi-provider, budget-guarded), run Opus, save.
@@ -30,26 +36,37 @@ async function handler(request: Request) {
   }
 
   try {
-    await markStage(postId, 'transcribing')
-    const { content, lang, durationMinutes } = await getTranscript(youtubeUrl)
+    const pipeline = (async () => {
+      await markStage(postId, 'transcribing')
+      const { content, lang, durationMinutes } = await getTranscript(youtubeUrl)
 
-    await markStage(postId, 'summarizing')
-    const generated = await summarizeFromTranscript(content, {
-      title: post.title,
-      author: post.creator ?? '',
-      lang,
+      await markStage(postId, 'summarizing')
+      const generated = await summarizeFromTranscript(content, {
+        title: post.title,
+        author: post.creator ?? '',
+        lang,
+      })
+
+      await markPostReady(postId, {
+        title: generated.title || post.title,
+        podcast_name: generated.podcast_name || post.podcast_name,
+        creator: generated.creator || post.creator,
+        duration_minutes: durationMinutes ?? post.duration_minutes,
+        tags: generated.tags,
+        summary: toStoredSummary(generated),
+        key_takeaways: generated.summary.key_takeaways,
+        resources: generated.resources,
+      })
+    })()
+
+    const timeout = new Promise<never>((_, reject) => {
+      setTimeout(
+        () => reject(new Error('Generation timed out.')),
+        WORKER_TIMEOUT_MS
+      )
     })
 
-    await markPostReady(postId, {
-      title: generated.title || post.title,
-      podcast_name: generated.podcast_name || post.podcast_name,
-      creator: generated.creator || post.creator,
-      duration_minutes: durationMinutes ?? post.duration_minutes,
-      tags: generated.tags,
-      summary: toStoredSummary(generated),
-      key_takeaways: generated.summary.key_takeaways,
-      resources: generated.resources,
-    })
+    await Promise.race([pipeline, timeout])
 
     return NextResponse.json({ ok: true })
   } catch (err) {
