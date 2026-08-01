@@ -80,6 +80,11 @@ export default async function FeedPage() {
           channelTitle: v.channel_title,
         }))}
         statuses={statuses}
+        channels={toggled.map((c) => ({
+          channelId: c.channel_id,
+          title: c.title,
+          avatar: c.thumbnail_url,
+        }))}
       />
     </div>
   )

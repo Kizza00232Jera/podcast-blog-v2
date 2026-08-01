@@ -98,6 +98,46 @@ export async function getFeedVideos(
     .limit(limit)
 }
 
+/**
+ * Videos the user has hidden from their feed, newest first — fetched only
+ * when the "show hidden" toggle is switched on, so the default feed query
+ * and its 120-row cap stay untouched.
+ */
+export async function getHiddenFeedVideos(
+  userId: string,
+  limit = 120
+): Promise<FeedVideoRow[]> {
+  return db
+    .select({
+      video_id: channelVideos.video_id,
+      channel_id: channelVideos.channel_id,
+      title: channelVideos.title,
+      thumbnail_url: channelVideos.thumbnail_url,
+      duration_seconds: channelVideos.duration_seconds,
+      published_at: channelVideos.published_at,
+      channel_title: channels.title,
+    })
+    .from(channelVideos)
+    .innerJoin(
+      channels,
+      and(
+        eq(channels.channel_id, channelVideos.channel_id),
+        eq(channels.user_id, userId),
+        eq(channels.toggled, true)
+      )
+    )
+    .innerJoin(
+      hiddenVideos,
+      and(
+        eq(hiddenVideos.video_id, channelVideos.video_id),
+        eq(hiddenVideos.user_id, userId)
+      )
+    )
+    .where(gte(channelVideos.duration_seconds, MIN_FEED_DURATION_SECONDS))
+    .orderBy(desc(channelVideos.published_at))
+    .limit(limit)
+}
+
 /** Hide a video from the user's feed (idempotent). */
 export async function hideVideo(
   userId: string,
